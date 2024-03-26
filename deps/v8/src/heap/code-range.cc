@@ -106,7 +106,7 @@ bool CodeRange::InitReservation(v8::PageAllocator* page_allocator,
     requested = kMinimumCodeRangeSize;
   }
 
-  const size_t kPageSize = MemoryChunk::kPageSize;
+  const size_t kPageSize = MutablePageMetadata::kPageSize;
   CHECK(IsAligned(kPageSize, page_allocator->AllocatePageSize()));
 
   // When V8_EXTERNAL_CODE_SPACE_BOOL is enabled the allocatable region must
@@ -226,7 +226,8 @@ bool CodeRange::InitReservation(v8::PageAllocator* page_allocator,
 #endif  // V8_OS_WIN64
   }
 
-  if (V8_HEAP_USE_PTHREAD_JIT_WRITE_PROTECT &&
+  if ((V8_HEAP_USE_PTHREAD_JIT_WRITE_PROTECT ||
+       V8_HEAP_USE_BECORE_JIT_WRITE_PROTECT) &&
       params.jit == JitPermission::kMapAsJittable) {
     // Should the reserved area ever become non-empty we shouldn't mark it as
     // RWX below.
@@ -416,7 +417,8 @@ uint8_t* CodeRange::RemapEmbeddedBuiltins(Isolate* isolate,
     }
   }
 
-  if (V8_HEAP_USE_PTHREAD_JIT_WRITE_PROTECT) {
+  if (V8_HEAP_USE_PTHREAD_JIT_WRITE_PROTECT ||
+      V8_HEAP_USE_BECORE_JIT_WRITE_PROTECT) {
     if (!page_allocator()->RecommitPages(embedded_blob_code_copy, code_size,
                                          PageAllocator::kReadWriteExecute)) {
       V8::FatalProcessOutOfMemory(isolate,
